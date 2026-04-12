@@ -96,6 +96,51 @@
                 android:textStyle="bold"
                 android:letterSpacing="0.05" />
 
+            <!-- CPU Usage Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                app:cardCornerRadius="16dp"
+                app:cardBackgroundColor="#1AFFFFFF"
+                app:strokeWidth="1dp"
+                app:strokeColor="#30FFFFFF">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="CPU Load"
+                            android:textColor="#00FFFF"
+                            android:textStyle="bold" />
+                        <TextView
+                            android:id="@+id/tv_cpu_stats"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_alignParentRight="true"
+                            android:text="0.00"
+                            android:textColor="#80FFFFFF"
+                            android:textSize="12sp" />
+                    </RelativeLayout>
+                    <com.google.android.material.progressindicator.LinearProgressIndicator
+                        android:id="@+id/progress_cpu"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        app:trackColor="#20FFFFFF"
+                        app:indicatorColor="#00E5FF"
+                        app:trackThickness="6dp"
+                        app:trackCornerRadius="3dp"
+                        android:progress="10" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
             <!-- RAM Usage Card -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
