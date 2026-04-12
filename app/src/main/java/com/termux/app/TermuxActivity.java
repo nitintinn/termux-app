@@ -1,6 +1,7 @@
 package com.termux.app;
 
 import android.annotation.SuppressLint;
+import android.graphics.Rect;
 import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
@@ -179,6 +180,7 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
         }
         TermuxUtils.sendTermuxOpenedBroadcast(this);
         setupBottomNavigation();
+        setupKeyboardListener();
         if (savedInstanceState == null) {
             switchFragment(TAG_TERMINAL);
         } else {
@@ -460,6 +462,30 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
             return false;
         });
         updateTerminalBadge();
+    }
+
+    private void setupKeyboardListener() {
+        final View rootView = findViewById(R.id.activity_termux_root_view);
+        final View navContainer = findViewById(R.id.floating_nav_container);
+        if (rootView == null || navContainer == null) return;
+
+        rootView.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+            Rect r = new Rect();
+            rootView.getWindowVisibleDisplayFrame(r);
+            int screenHeight = rootView.getRootView().getHeight();
+            int keypadHeight = screenHeight - r.bottom;
+
+            // If keyboard is visible, hide the floating nav bar
+            if (keypadHeight > screenHeight * 0.15) {
+                if (navContainer.getVisibility() != View.GONE) {
+                    navContainer.setVisibility(View.GONE);
+                }
+            } else {
+                if (navContainer.getVisibility() != View.VISIBLE) {
+                    navContainer.setVisibility(View.VISIBLE);
+                }
+            }
+        });
     }
 
     public void updateTerminalBadge() {
