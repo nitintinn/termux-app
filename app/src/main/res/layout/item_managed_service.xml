@@ -69,9 +69,47 @@
         </RelativeLayout>
 
         <View
+            android:id="@+id/stats_divider"
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:layout_marginTop="16dp"
+            android:layout_marginBottom="12dp"
+            android:background="#15FFFFFF"
+            android:visibility="gone" />
+
+        <LinearLayout
+            android:id="@+id/stats_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingBottom="8dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="SERVICE INSIGHTS"
+                android:textColor="#50FFFFFF"
+                android:textSize="9sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.1"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:id="@+id/service_stats"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Account: Authenticated\nTunnels: 3 active\nSites: cloud.quvantix.com"
+                android:textColor="#A000FFFF"
+                android:textSize="11sp"
+                android:lineSpacingExtra="4dp"
+                android:fontFamily="monospace" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="8dp"
             android:layout_marginBottom="16dp"
             android:background="#15FFFFFF" />
 

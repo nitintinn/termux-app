@@ -27,6 +27,8 @@ public class ManagedService {
     
     private ServiceState state = ServiceState.UNINSTALLED;
     private String lastOutput = "";
+    private String publicUrl = "";
+    private String accountStats = "";
 
     public ManagedService(String title, String packageName, String binaryName, String startCmd, String stopCmd, String checkRunningCmd, String configPath, @DrawableRes int iconResId) {
         this.title = title;
@@ -52,6 +54,10 @@ public class ManagedService {
     public void setState(ServiceState state) { this.state = state; }
     public String getLastOutput() { return lastOutput; }
     public void setLastOutput(String lastOutput) { this.lastOutput = lastOutput; }
+    public String getPublicUrl() { return publicUrl; }
+    public void setPublicUrl(String publicUrl) { this.publicUrl = publicUrl; }
+    public String getAccountStats() { return accountStats; }
+    public void setAccountStats(String accountStats) { this.accountStats = accountStats; }
 
     public String getBinaryPath() {
         return "/data/data/com.termux/files/usr/bin/" + binaryName;
