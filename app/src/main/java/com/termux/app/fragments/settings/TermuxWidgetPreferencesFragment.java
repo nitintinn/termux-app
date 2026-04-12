@@ -47,3 +47,4 @@ class TermuxWidgetPreferencesDataStore extends PreferenceDataStore {
     }
 
 }
+

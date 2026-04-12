@@ -247,3 +247,4 @@ public final class TerminalRenderer {
         return mFontLineSpacing;
     }
 }
+

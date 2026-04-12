@@ -45,3 +45,4 @@ public abstract class LocalSocketManagerClientBase implements ILocalSocketManage
     protected abstract String getLogTag();
 
 }
+

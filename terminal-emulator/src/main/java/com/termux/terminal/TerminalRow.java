@@ -281,3 +281,4 @@ public final class TerminalRow {
     }
 
 }
+

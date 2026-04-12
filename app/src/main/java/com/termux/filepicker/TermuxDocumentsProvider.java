@@ -266,3 +266,4 @@ public class TermuxDocumentsProvider extends DocumentsProvider {
     }
 
 }
+

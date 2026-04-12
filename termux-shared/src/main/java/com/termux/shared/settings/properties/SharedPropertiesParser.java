@@ -35,3 +35,4 @@ public interface SharedPropertiesParser {
     Object getInternalPropertyValueFromValue(@NonNull Context context, String key, String value);
 
 }
+

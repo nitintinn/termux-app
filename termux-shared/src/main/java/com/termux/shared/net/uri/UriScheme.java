@@ -26,3 +26,4 @@ public class UriScheme {
     public static final String SCHEME_HTTPS = "https";
 
 }
+

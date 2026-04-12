@@ -259,3 +259,4 @@ public class TermuxAppSharedPreferences extends AppSharedPreferences {
     }
 
 }
+

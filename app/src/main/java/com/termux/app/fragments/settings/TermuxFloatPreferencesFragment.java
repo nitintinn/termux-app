@@ -47,3 +47,4 @@ class TermuxFloatPreferencesDataStore extends PreferenceDataStore {
     }
 
 }
+

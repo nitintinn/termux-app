@@ -73,3 +73,4 @@ public class TermuxStylingAppSharedPreferences extends AppSharedPreferences {
     }
 
 }
+

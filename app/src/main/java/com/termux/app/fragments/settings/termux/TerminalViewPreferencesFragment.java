@@ -75,3 +75,4 @@ class TerminalViewPreferencesDataStore extends PreferenceDataStore {
     }
 
 }
+

@@ -282,3 +282,4 @@ public class TermuxActivityRootView extends LinearLayout implements ViewTreeObse
     }
 
 }
+

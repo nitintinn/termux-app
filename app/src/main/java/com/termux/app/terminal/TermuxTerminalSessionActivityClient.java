@@ -384,7 +384,9 @@ public class TermuxTerminalSessionActivityClient extends TermuxTerminalSessionCl
             TerminalSession newTerminalSession = newTermuxSession.getTerminalSession();
             setCurrentSession(newTerminalSession);
 
-            mActivity.getDrawer().closeDrawers();
+            if (mActivity.getDrawer() != null) {
+                mActivity.getDrawer().closeDrawers();
+            }
         }
     }
 
@@ -526,3 +528,4 @@ public class TermuxTerminalSessionActivityClient extends TermuxTerminalSessionCl
     }
 
 }
+

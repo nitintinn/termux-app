@@ -495,3 +495,4 @@ public final class TerminalBuffer {
     }
 
 }
+

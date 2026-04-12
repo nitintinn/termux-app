@@ -371,3 +371,4 @@ public final class TerminalSession extends TerminalOutput {
     }
 
 }
+

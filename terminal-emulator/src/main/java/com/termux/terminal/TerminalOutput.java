@@ -30,3 +30,4 @@ public abstract class TerminalOutput {
     public abstract void onColorsChanged();
 
 }
+

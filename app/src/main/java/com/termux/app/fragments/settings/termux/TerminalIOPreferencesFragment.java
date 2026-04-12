@@ -80,3 +80,4 @@ class TerminalIOPreferencesDataStore extends PreferenceDataStore {
     }
 
 }
+

@@ -20,3 +20,4 @@ public class ResultSenderErrno extends Errno {
     }
 
 }
+

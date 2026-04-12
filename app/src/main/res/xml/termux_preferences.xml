@@ -16,3 +16,4 @@
         app:fragment="com.termux.app.fragments.settings.termux.TerminalViewPreferencesFragment"/>
 
 </PreferenceScreen>
+

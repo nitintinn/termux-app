@@ -601,3 +601,4 @@ Java_com_termux_shared_net_socket_local_LocalSocketManager_getPeerCredNative(JNI
     // Return success since PeerCred was filled successfully
     return getJniResult(env, logTitle);
 }
+

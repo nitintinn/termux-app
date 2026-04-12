@@ -92,3 +92,4 @@ public class TermuxWidgetAppSharedPreferences extends AppSharedPreferences {
     }
 
 }
+

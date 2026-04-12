@@ -448,3 +448,4 @@ public class LocalSocketManager {
     @Nullable private static native JniResult getPeerCredNative(@NonNull String serverTitle, int fd, PeerCred peerCred);
 
 }
+

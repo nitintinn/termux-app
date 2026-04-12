@@ -233,3 +233,4 @@ public class TermuxOpenReceiver extends BroadcastReceiver {
     }
 
 }
+

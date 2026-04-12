@@ -714,7 +714,7 @@ public final class TerminalView extends View {
      * if user has defined a custom kcm file, like done in POC mentioned in #2237. Note that
      * Hacker's Keyboard calls `commitText()` so don't test fn/shift with it for this function.
      * https://github.com/termux/termux-app/pull/2237
-     * https://github.com/agnostic-apollo/termux-app/blob/terminal-code-point-custom-mapping/terminal-view/src/main/java/com/termux/view/TerminalView.java
+     * https://github.com/agnostic-apollo/termux-app/blob/terminal-code-point-custom-mapping/terminal-view/src/main/java/com.termux/view/TerminalView.java
      *
      * Key Character Map (kcm) and Key Layout (kl) files info:
      * https://source.android.com/devices/input/key-character-map-files
@@ -1498,3 +1498,4 @@ public final class TerminalView extends View {
     }
 
 }
+

@@ -25,6 +25,11 @@ public class SELinuxUtils {
     @Nullable
     public static String getContext() {
         ReflectionUtils.bypassHiddenAPIReflectionRestrictions();
+        if (!ReflectionUtils.areHiddenAPIReflectionRestrictionsBypassed()) {
+            Logger.logError(LOG_TAG, "Cannot get SELinux context: Hidden API bypass failed");
+            return null;
+        }
+
         String methodName = "getContext";
         try {
             @SuppressLint("PrivateApi") Class<?> clazz = Class.forName(ANDROID_OS_SELINUX_CLASS);
@@ -34,7 +39,9 @@ public class SELinuxUtils {
                 return null;
             }
 
-            return (String) ReflectionUtils.invokeMethod(method, null).value;
+            ReflectionUtils.MethodInvokeResult result = ReflectionUtils.invokeMethod(method, null);
+            return result.success ? (String) result.value : null;
+
         } catch (Exception e) {
             Logger.logStackTraceWithMessage(LOG_TAG, "Failed to call " + methodName + "() method of " + ANDROID_OS_SELINUX_CLASS + " class", e);
             return null;
@@ -51,6 +58,11 @@ public class SELinuxUtils {
     @Nullable
     public static String getPidContext(int pid) {
         ReflectionUtils.bypassHiddenAPIReflectionRestrictions();
+        if (!ReflectionUtils.areHiddenAPIReflectionRestrictionsBypassed()) {
+            Logger.logError(LOG_TAG, "Cannot get SELinux context: Hidden API bypass failed");
+            return null;
+        }
+
         String methodName = "getPidContext";
         try {
             @SuppressLint("PrivateApi") Class<?> clazz = Class.forName(ANDROID_OS_SELINUX_CLASS);
@@ -60,7 +72,9 @@ public class SELinuxUtils {
                 return null;
             }
 
-            return (String) ReflectionUtils.invokeMethod(method, null, pid).value;
+            ReflectionUtils.MethodInvokeResult result = ReflectionUtils.invokeMethod(method, null, pid);
+            return result.success ? (String) result.value : null;
+
         } catch (Exception e) {
             Logger.logStackTraceWithMessage(LOG_TAG, "Failed to call " + methodName + "() method of " + ANDROID_OS_SELINUX_CLASS + " class", e);
             return null;
@@ -77,6 +91,11 @@ public class SELinuxUtils {
     @Nullable
     public static String getFileContext(@NonNull String path) {
         ReflectionUtils.bypassHiddenAPIReflectionRestrictions();
+        if (!ReflectionUtils.areHiddenAPIReflectionRestrictionsBypassed()) {
+            Logger.logError(LOG_TAG, "Cannot get SELinux context: Hidden API bypass failed");
+            return null;
+        }
+
         String methodName = "getFileContext";
         try {
             @SuppressLint("PrivateApi") Class<?> clazz = Class.forName(ANDROID_OS_SELINUX_CLASS);
@@ -86,7 +105,9 @@ public class SELinuxUtils {
                 return null;
             }
 
-            return (String) ReflectionUtils.invokeMethod(method, null, path).value;
+            ReflectionUtils.MethodInvokeResult result = ReflectionUtils.invokeMethod(method, null, path);
+            return result.success ? (String) result.value : null;
+
         } catch (Exception e) {
             Logger.logStackTraceWithMessage(LOG_TAG, "Failed to call " + methodName + "() method of " + ANDROID_OS_SELINUX_CLASS + " class", e);
             return null;
@@ -94,3 +115,4 @@ public class SELinuxUtils {
     }
 
 }
+

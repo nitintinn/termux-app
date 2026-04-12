@@ -371,3 +371,4 @@ public final class KeyHandler {
         return start + (";" + modifier) + lastChar;
     }
 }
+

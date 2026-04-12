@@ -39,3 +39,4 @@ final class JNI {
     public static native void close(int fileDescriptor);
 
 }
+

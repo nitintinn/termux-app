@@ -29,12 +29,12 @@ public class ReflectionUtils {
         if (!HIDDEN_API_REFLECTION_RESTRICTIONS_BYPASSED && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             Logger.logDebug(LOG_TAG, "Bypassing android hidden api reflection restrictions");
             try {
-                HiddenApiBypass.addHiddenApiExemptions("");
+                // Use a non-empty prefix if standard bypass is failing on some devices
+                HiddenApiBypass.addHiddenApiExemptions("L");
+                HIDDEN_API_REFLECTION_RESTRICTIONS_BYPASSED = true;
             } catch (Throwable t) {
                 Logger.logStackTraceWithMessage(LOG_TAG, "Failed to bypass hidden API reflection restrictions", t);
             }
-
-            HIDDEN_API_REFLECTION_RESTRICTIONS_BYPASSED = true;
         }
     }
 
@@ -74,7 +74,7 @@ public class ReflectionUtils {
         public Object value;
 
         FieldInvokeResult(boolean success, Object value) {
-            this.value = success;
+            this.success = success;
             this.value = value;
         }
     }
@@ -173,7 +173,7 @@ public class ReflectionUtils {
         public Object value;
 
         MethodInvokeResult(boolean success, Object value) {
-            this.value = success;
+            this.success = success;
             this.value = value;
         }
     }
@@ -280,3 +280,4 @@ public class ReflectionUtils {
     }
 
 }
+

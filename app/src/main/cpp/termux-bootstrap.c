@@ -9,3 +9,4 @@ JNIEXPORT jbyteArray JNICALL Java_com_termux_app_TermuxInstaller_getZip(JNIEnv *
     (*env)->SetByteArrayRegion(env, ret, 0, blob_size, blob);
     return ret;
 }
+

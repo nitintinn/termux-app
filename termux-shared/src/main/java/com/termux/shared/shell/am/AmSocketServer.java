@@ -52,7 +52,7 @@ import java.util.List;
  * 4. Stop server if needed with a call to {@link LocalSocketManager#stop()} on the
  *    {@link LocalSocketManager} instance returned by start call.
  *
- * https://github.com/termux/termux-am-library/blob/main/termux-am-library/src/main/java/com/termux/am/Am.java
+ * https://github.com/termux/termux-am-library/blob/main/termux-am-library/src/main/java/com.termux.am/Am.java
  * https://github.com/termux/termux-am-socket
  * https://developer.android.com/studio/command-line/adb#am
  * https://cs.android.com/android/platform/superproject/+/android-12.0.0_r32:frameworks/base/services/core/java/com/android/server/am/ActivityManagerShellCommand.java
@@ -256,3 +256,4 @@ public class AmSocketServer {
     }
 
 }
+

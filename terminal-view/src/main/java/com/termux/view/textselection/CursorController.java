@@ -53,3 +53,4 @@ public interface CursorController extends ViewTreeObserver.OnTouchModeChangeList
     boolean isActive();
 
 }
+

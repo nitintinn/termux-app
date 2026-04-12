@@ -99,3 +99,4 @@ class DebuggingPreferencesDataStore extends PreferenceDataStore {
     }
 
 }
+

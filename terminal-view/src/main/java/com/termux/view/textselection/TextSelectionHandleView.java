@@ -350,3 +350,4 @@ public class TextSelectionHandleView extends View {
     }
 
 }
+

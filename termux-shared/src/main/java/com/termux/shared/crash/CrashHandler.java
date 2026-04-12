@@ -156,3 +156,4 @@ public class CrashHandler implements Thread.UncaughtExceptionHandler {
     }
 
 }
+

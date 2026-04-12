@@ -256,3 +256,4 @@ public class ResultData implements Serializable {
     }
 
 }
+

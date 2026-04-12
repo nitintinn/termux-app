@@ -216,3 +216,4 @@ JNIEXPORT void JNICALL Java_com_termux_terminal_JNI_close(JNIEnv* TERMUX_UNUSED(
 {
     close(fileDescriptor);
 }
+

@@ -719,3 +719,4 @@ public abstract class TermuxSharedProperties {
     }
 
 }
+

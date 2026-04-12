@@ -106,3 +106,4 @@ public class TermuxTerminalExtraKeys extends TerminalExtraKeys {
     }
 
 }
+

@@ -159,3 +159,4 @@ public class TermuxFloatAppSharedPreferences extends AppSharedPreferences {
     }
 
 }
+

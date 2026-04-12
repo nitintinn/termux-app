@@ -26,3 +26,4 @@ public class ShellEnvironmentVariable implements Comparable<ShellEnvironmentVari
         return this.name.compareTo(other.name);
     }
 }
+

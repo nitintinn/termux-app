@@ -83,3 +83,4 @@ public class TermuxTaskerAppSharedPreferences extends AppSharedPreferences {
     }
 
 }
+

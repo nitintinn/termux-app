@@ -47,3 +47,4 @@ class TermuxAPIPreferencesDataStore extends PreferenceDataStore {
     }
 
 }
+

@@ -800,3 +800,4 @@ public class TermuxTerminalViewClient extends TermuxTerminalViewClientBase {
     }
 
 }
+

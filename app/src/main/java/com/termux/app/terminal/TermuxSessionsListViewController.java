@@ -107,3 +107,4 @@ public class TermuxSessionsListViewController extends ArrayAdapter<TermuxSession
     }
 
 }
+

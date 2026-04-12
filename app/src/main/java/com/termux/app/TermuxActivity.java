@@ -241,15 +241,14 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
             getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
         }
 
-        setTermuxTerminalViewAndClients();
 
-        setTerminalToolbarView(savedInstanceState);
 
         setSettingsButtonView();
 
         setNewSessionButtonView();
 
         setToggleKeyboardView();
+        setAntigravityDashboardView();
 
         registerForContextMenu(mTerminalView);
 
@@ -481,14 +480,21 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
 
 
 
-    private void setTermuxTerminalViewAndClients() {
+        public void onTerminalFragmentCreated(android.view.View view) {
+        setTermuxTerminalViewAndClients(view);
+        setTerminalToolbarView(null);
+    }
+
+    private void setTermuxTerminalViewAndClients(android.view.View fragmentView) {
         // Set termux terminal view and session clients
-        mTermuxTerminalSessionActivityClient = new TermuxTerminalSessionActivityClient(this);
-        mTermuxTerminalViewClient = new TermuxTerminalViewClient(this, mTermuxTerminalSessionActivityClient);
+        mTermuxTerminalSessionActivityClient = new com.termux.app.terminal.TermuxTerminalSessionActivityClient(this);
+        mTermuxTerminalViewClient = new com.termux.app.terminal.TermuxTerminalViewClient(this, mTermuxTerminalSessionActivityClient);
 
         // Set termux terminal view
-        mTerminalView = findViewById(R.id.terminal_view);
-        mTerminalView.setTerminalViewClient(mTermuxTerminalViewClient);
+        mTerminalView = fragmentView.findViewById(R.id.terminal_view);
+        if (mTerminalView != null) {
+            mTerminalView.setTerminalViewClient(mTermuxTerminalViewClient);
+        }
 
         if (mTermuxTerminalViewClient != null)
             mTermuxTerminalViewClient.onCreate();
@@ -511,7 +517,8 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
         mTermuxTerminalExtraKeys = new TermuxTerminalExtraKeys(this, mTerminalView,
             mTermuxTerminalViewClient, mTermuxTerminalSessionActivityClient);
 
-        final ViewPager terminalToolbarViewPager = getTerminalToolbarViewPager();
+        final androidx.viewpager.widget.ViewPager terminalToolbarViewPager = getTerminalToolbarViewPager();
+        if (terminalToolbarViewPager == null) return;
         if (mPreferences.shouldShowTerminalToolbar()) terminalToolbarViewPager.setVisibility(View.VISIBLE);
 
         ViewGroup.LayoutParams layoutParams = terminalToolbarViewPager.getLayoutParams();
@@ -528,7 +535,8 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
     }
 
     private void setTerminalToolbarHeight() {
-        final ViewPager terminalToolbarViewPager = getTerminalToolbarViewPager();
+        final androidx.viewpager.widget.ViewPager terminalToolbarViewPager = getTerminalToolbarViewPager();
+        if (terminalToolbarViewPager == null) return;
         if (terminalToolbarViewPager == null) return;
 
         ViewGroup.LayoutParams layoutParams = terminalToolbarViewPager.getLayoutParams();
@@ -539,7 +547,8 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
     }
 
     public void toggleTerminalToolbar() {
-        final ViewPager terminalToolbarViewPager = getTerminalToolbarViewPager();
+        final androidx.viewpager.widget.ViewPager terminalToolbarViewPager = getTerminalToolbarViewPager();
+        if (terminalToolbarViewPager == null) return;
         if (terminalToolbarViewPager == null) return;
 
         final boolean showNow = mPreferences.toogleShowTerminalToolbar();
@@ -580,6 +589,37 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
                 -1, null, null);
             return true;
         });
+    }
+
+    private void setAntigravityDashboardView() {
+        android.view.View btnProot = findViewById(R.id.btn_install_proot);
+        android.view.View btnGit = findViewById(R.id.btn_install_git);
+        android.view.View btnSsh = findViewById(R.id.btn_install_ssh);
+        android.view.View btnCloudflared = findViewById(R.id.btn_install_cloudflared);
+
+        android.view.View.OnClickListener dashClickListener = v -> {
+            com.termux.terminal.TerminalSession currentSession = getCurrentSession();
+            if (currentSession != null) {
+                String cmd = "";
+                if (v == btnProot) cmd = "pkg install -y proot-distro\r";
+                else if (v == btnGit) cmd = "pkg install -y git\r";
+                else if (v == btnSsh) cmd = "pkg install -y openssh\r";
+                else if (v == btnCloudflared) cmd = "pkg install -y cloudflared\r";
+                
+                if (!cmd.isEmpty()) {
+                    byte[] cmdBytes = cmd.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+                    currentSession.write(cmdBytes, 0, cmdBytes.length);
+                }
+            }
+            if (getDrawer() != null) {
+                getDrawer().closeDrawers();
+            }
+        };
+
+        if (btnProot != null) btnProot.setOnClickListener(dashClickListener);
+        if (btnGit != null) btnGit.setOnClickListener(dashClickListener);
+        if (btnSsh != null) btnSsh.setOnClickListener(dashClickListener);
+        if (btnCloudflared != null) btnCloudflared.setOnClickListener(dashClickListener);
     }
 
     private void setToggleKeyboardView() {
@@ -838,8 +878,13 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
     }
 
 
-    public ViewPager getTerminalToolbarViewPager() {
-        return (ViewPager) findViewById(R.id.terminal_toolbar_view_pager);
+        public androidx.viewpager.widget.ViewPager getTerminalToolbarViewPager() {
+        androidx.viewpager.widget.ViewPager pager = findViewById(R.id.terminal_toolbar_view_pager);
+        if (pager != null) return pager;
+        if (mTerminalView != null && mTerminalView.getParent() != null) {
+            return ((android.view.View)mTerminalView.getParent()).findViewById(R.id.terminal_toolbar_view_pager);
+        }
+        return null;
     }
 
     public float getTerminalToolbarDefaultHeight() {
@@ -1011,3 +1056,6 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
     }
 
 }
+
+
+

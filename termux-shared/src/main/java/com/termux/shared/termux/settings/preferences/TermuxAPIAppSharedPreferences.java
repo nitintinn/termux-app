@@ -82,3 +82,4 @@ public class TermuxAPIAppSharedPreferences extends AppSharedPreferences {
     }
 
 }
+

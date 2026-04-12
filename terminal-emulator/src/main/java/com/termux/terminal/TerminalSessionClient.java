@@ -49,3 +49,4 @@ public interface TerminalSessionClient {
     void logStackTrace(String tag, Exception e);
 
 }
+
