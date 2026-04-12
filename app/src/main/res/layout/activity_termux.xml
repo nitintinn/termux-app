@@ -13,22 +13,32 @@
         android:layout_height="0dp"
         android:layout_weight="1">
 
-        <androidx.fragment.app.FragmentContainerView
-            android:id="@+id/fragment_container"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_above="@+id/bottom_navigation" />
-
-        <com.google.android.material.bottomnavigation.BottomNavigationView
-            android:id="@+id/bottom_navigation"
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/floating_nav_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_alignParentBottom="true"
-            android:background="#DD121212"
-            app:itemIconTint="#00E5FF"
-            app:itemTextColor="#FFFFFF"
-            app:menu="@menu/bottom_nav_menu"
-            app:elevation="12dp" />
+            android:layout_marginHorizontal="24dp"
+            android:layout_marginBottom="24dp"
+            app:cardCornerRadius="32dp"
+            app:cardElevation="12dp"
+            app:cardBackgroundColor="@android:color/transparent"
+            app:strokeWidth="1dp"
+            app:strokeColor="#3000E5FF">
+
+            <com.google.android.material.bottomnavigation.BottomNavigationView
+                android:id="@+id/bottom_navigation"
+                android:layout_width="match_parent"
+                android:layout_height="64dp"
+                android:background="@drawable/nav_bar_floating_bg"
+                app:itemIconTint="@color/nav_item_tint"
+                app:itemTextColor="@color/nav_item_tint"
+                app:itemRippleColor="#3000E5FF"
+                app:itemActiveIndicatorStyle="@style/AntigravityNavIndicator"
+                app:labelVisibilityMode="selected"
+                app:menu="@menu/bottom_nav_menu"
+                app:elevation="0dp" />
+        </com.google.android.material.card.MaterialCardView>
 
     </RelativeLayout>
 

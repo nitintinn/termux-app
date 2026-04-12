@@ -1,37 +1,56 @@
 package com.termux.app.fragments;
 
 import android.content.Context;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.chip.Chip;
+import com.google.android.material.snackbar.Snackbar;
 import com.termux.R;
 import com.termux.app.TermuxActivity;
 import com.termux.app.TermuxService;
+import com.termux.app.models.AtermuxServiceRegistry;
+import com.termux.app.models.ManagedService;
 import com.termux.shared.logger.Logger;
+import com.termux.shared.termux.TermuxConstants;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class ConsoleFragment extends Fragment {
 
     private static final String LOG_TAG = "ConsoleFragment";
     private RecyclerView mRecyclerView;
-    private ActionAdapter mAdapter;
+    private ServiceAdapter mAdapter;
     private TextView mStatusText;
     private WebView mWebView;
+    private AtermuxServiceRegistry mRegistry;
+    private final Handler mHandler = new Handler(Looper.getMainLooper());
+    private final Runnable mRefreshRunnable = new Runnable() {
+        @Override
+        public void run() {
+            refreshStatus();
+            mHandler.postDelayed(this, 5000);
+        }
+    };
 
     @Nullable
     @Override
@@ -44,25 +63,25 @@ public class ConsoleFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         mStatusText = view.findViewById(R.id.console_status_text);
-        mRecyclerView = view.findViewById(R.id.recycler_quick_actions);
+        mRecyclerView = view.findViewById(R.id.recycler_quick_actions); // Keep ID from layout
         mWebView = view.findViewById(R.id.console_webview);
 
+        mRegistry = new AtermuxServiceRegistry();
         setupRecyclerView();
         setupWebView();
-        updateStatus();
+        
+        mHandler.post(mRefreshRunnable);
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        mHandler.removeCallbacks(mRefreshRunnable);
     }
 
     private void setupRecyclerView() {
-        List<ConsoleAction> actions = new ArrayList<>();
-        actions.add(new ConsoleAction("Quick Update", "pkg update && pkg upgrade -y", R.drawable.ic_service_notification));
-        actions.add(new ConsoleAction("Start SSH", "sshd", R.drawable.ic_terminal));
-        actions.add(new ConsoleAction("Network Info", "ifconfig && curl ifconfig.me", R.mipmap.ic_launcher));
-        actions.add(new ConsoleAction("Python REPL", "python", R.mipmap.ic_launcher));
-        actions.add(new ConsoleAction("Node.js REPL", "node", R.mipmap.ic_launcher));
-        actions.add(new ConsoleAction("System Info", "uname -a && uptime", R.drawable.ic_settings));
-
-        mAdapter = new ActionAdapter(actions, this::onActionClicked);
-        mRecyclerView.setLayoutManager(new GridLayoutManager(getContext(), 2));
+        mAdapter = new ServiceAdapter(mRegistry.getServices(), this::onServiceAction);
+        mRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         mRecyclerView.setAdapter(mAdapter);
     }
 
@@ -86,93 +105,191 @@ public class ConsoleFragment extends Fragment {
             });
             mWebView.getSettings().setJavaScriptEnabled(true);
             mWebView.getSettings().setDomStorageEnabled(true);
-            // Default to a useful local dashboard if it exists, otherwise a placeholder
             mWebView.loadUrl("http://localhost:3000");
         }
     }
 
-    private void onActionClicked(ConsoleAction action) {
+    private void refreshStatus() {
         TermuxActivity activity = (TermuxActivity) getActivity();
         if (activity == null) return;
-
         TermuxService service = activity.getTermuxService();
-        if (service == null) {
-            Toast.makeText(getContext(), "Service not ready", Toast.LENGTH_SHORT).show();
-            return;
-        }
+        if (service == null) return;
 
-        Logger.logInfo(LOG_TAG, "Console Action Clicked: " + action.getTitle());
-        
-        // Execute the command in a new terminal session
-        service.createTermuxSession(
-            "/data/data/com.termux/files/usr/bin/login", 
-            new String[]{"-c", action.getCommand()}, 
-            null, null, false, action.getTitle());
-
-        Toast.makeText(getContext(), "Starting " + action.getTitle() + "...", Toast.LENGTH_SHORT).show();
-        
-        // Switch to the terminal tab to show the output
-        // activity.findViewById(R.id.bottom_navigation).setSelectedItemId(R.id.navigation_terminal);
+        mRegistry.refreshStates(service, () -> {
+            activity.runOnUiThread(() -> {
+                mAdapter.notifyDataSetChanged();
+                int sessionCount = service.getTermuxSessions().size();
+                mStatusText.setText("System Ready • " + sessionCount + " Active Sessions");
+            });
+        });
     }
 
-    private void updateStatus() {
+    private void onServiceAction(ManagedService service) {
         TermuxActivity activity = (TermuxActivity) getActivity();
-        if (activity != null && activity.getTermuxService() != null) {
-            int sessionCount = activity.getTermuxService().getTermuxSessions().size();
-            mStatusText.setText("System Ready • " + sessionCount + " Active Sessions");
+        if (activity == null) return;
+        TermuxService termuxService = activity.getTermuxService();
+        if (termuxService == null) return;
+
+        switch (service.getState()) {
+            case UNINSTALLED:
+                installService(service, termuxService);
+                break;
+            case STOPPED:
+                startService(service, termuxService);
+                break;
+            case RUNNING:
+                stopService(service, termuxService);
+                break;
         }
+    }
+
+    private void installService(ManagedService service, TermuxService termuxService) {
+        service.setState(ManagedService.ServiceState.ACTION_IN_PROGRESS);
+        mAdapter.notifyDataSetChanged();
+
+        String installCmd = "pkg install -y " + service.getPackageName();
+        termuxService.createTermuxSession(
+            TermuxConstants.TERMUX_BIN_PREFIX_DIR_PATH + "/login",
+            new String[]{"-c", installCmd},
+            null, null, false, "Installing " + service.getTitle());
+
+        Toast.makeText(getContext(), "Installing " + service.getTitle() + " in background...", Toast.LENGTH_LONG).show();
+    }
+
+    private void startService(ManagedService service, TermuxService termuxService) {
+        if (service.getStartCmd() == null) return;
+        
+        service.setState(ManagedService.ServiceState.ACTION_IN_PROGRESS);
+        mAdapter.notifyDataSetChanged();
+
+        termuxService.createTermuxSession(
+            TermuxConstants.TERMUX_BIN_PREFIX_DIR_PATH + "/login",
+            new String[]{"-c", service.getStartCmd()},
+            null, null, false, "Starting " + service.getTitle());
+    }
+
+    private void stopService(ManagedService service, TermuxService termuxService) {
+        if (service.getStopCmd() == null) return;
+        
+        service.setState(ManagedService.ServiceState.ACTION_IN_PROGRESS);
+        mAdapter.notifyDataSetChanged();
+
+        termuxService.createTermuxSession(
+            TermuxConstants.TERMUX_BIN_PREFIX_DIR_PATH + "/login",
+            new String[]{"-c", service.getStopCmd()},
+            null, null, false, "Stopping " + service.getTitle());
     }
 
     /**
-     * Dashboard Action Adapter
+     * Service Adapter
      */
-    static class ActionAdapter extends RecyclerView.Adapter<ActionAdapter.ViewHolder> {
-        private final List<ConsoleAction> actions;
-        private final OnActionListener listener;
+    static class ServiceAdapter extends RecyclerView.Adapter<ServiceAdapter.ViewHolder> {
+        private final List<ManagedService> services;
+        private final OnServiceListener listener;
 
-        interface OnActionListener {
-            void onAction(ConsoleAction action);
+        interface OnServiceListener {
+            void onAction(ManagedService service);
         }
 
-        ActionAdapter(List<ConsoleAction> actions, OnActionListener listener) {
-            this.actions = actions;
+        ServiceAdapter(List<ManagedService> services, OnServiceListener listener) {
+            this.services = services;
             this.listener = listener;
         }
 
         @NonNull
         @Override
         public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_console_card, parent, false);
+            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_managed_service, parent, false);
             return new ViewHolder(view);
         }
 
         @Override
         public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-            ConsoleAction action = actions.get(position);
-            holder.title.setText(action.getTitle());
-            holder.status.setText(action.getStatus());
-            holder.icon.setImageResource(action.getIconResId());
-            holder.itemView.setOnClickListener(v -> listener.onAction(action));
+            ManagedService service = services.get(position);
+            holder.title.setText(service.getTitle());
+            holder.pkg.setText("pkg: " + service.getPackageName());
+            holder.icon.setImageResource(service.getIconResId());
+            
+            updateUIState(holder, service);
+
+            holder.btnAction.setOnClickListener(v -> listener.onAction(service));
+            
+            if (service.getConfigPath() != null && service.getState() != ManagedService.ServiceState.UNINSTALLED) {
+                holder.btnConfig.setVisibility(View.VISIBLE);
+                holder.btnConfig.setOnClickListener(v -> {
+                    // Start an editor in the terminal
+                    TermuxActivity activity = (TermuxActivity) v.getContext();
+                    activity.getTermuxService().createTermuxSession(
+                        TermuxConstants.TERMUX_BIN_PREFIX_DIR_PATH + "/login",
+                        new String[]{"-c", "nano " + service.getConfigPath()},
+                        null, null, false, "Editing " + service.getTitle() + " Config");
+                    Toast.makeText(v.getContext(), "Editing config in Terminal...", Toast.LENGTH_SHORT).show();
+                });
+            } else {
+                holder.btnConfig.setVisibility(View.GONE);
+            }
+        }
+
+        private void updateUIState(ViewHolder holder, ManagedService service) {
+            holder.progress.setVisibility(View.GONE);
+            holder.btnAction.setEnabled(true);
+            holder.statusBadge.setVisibility(View.VISIBLE);
+
+            switch (service.getState()) {
+                case UNINSTALLED:
+                    holder.statusBadge.setText("Missing");
+                    holder.statusBadge.setChipBackgroundColorResource(android.R.color.darker_gray);
+                    holder.btnAction.setText("Install");
+                    break;
+                case INSTALLED:
+                    holder.statusBadge.setText("Installed");
+                    holder.statusBadge.setChipBackgroundColor(ColorStateList.valueOf(Color.parseColor("#3300FFFF"))); // Faded Cyan
+                    holder.btnAction.setText("Installed");
+                    holder.btnAction.setEnabled(false);
+                    break;
+                case STOPPED:
+                    holder.statusBadge.setText("Stopped");
+                    holder.statusBadge.setChipBackgroundColor(ColorStateList.valueOf(Color.parseColor("#33FF0000"))); // Faded Red
+                    holder.btnAction.setText("Start");
+                    break;
+                case RUNNING:
+                    holder.statusBadge.setText("Running");
+                    holder.statusBadge.setChipBackgroundColor(ColorStateList.valueOf(Color.parseColor("#3300FF00"))); // Faded Green
+                    holder.btnAction.setText("Stop");
+                    if (service.isToolOnly()) {
+                        holder.btnAction.setText("Installed");
+                        holder.btnAction.setEnabled(false);
+                        holder.statusBadge.setText("Active");
+                    }
+                    break;
+                case ACTION_IN_PROGRESS:
+                    holder.statusBadge.setVisibility(View.INVISIBLE);
+                    holder.progress.setVisibility(View.VISIBLE);
+                    holder.btnAction.setEnabled(false);
+                    break;
+            }
         }
 
         @Override
-        public int getItemCount() {
-            return actions.size();
-        }
+        public int getItemCount() { return services.size(); }
 
         static class ViewHolder extends RecyclerView.ViewHolder {
-            TextView title, status;
+            TextView title, pkg;
             ImageView icon;
+            Chip statusBadge;
+            MaterialButton btnAction, btnConfig;
+            ProgressBar progress;
 
             ViewHolder(View view) {
                 super(view);
-                title = view.findViewById(R.id.action_title);
-                status = view.findViewById(R.id.action_status);
-                icon = view.findViewById(R.id.action_icon);
+                title = view.findViewById(R.id.service_title);
+                pkg = view.findViewById(R.id.service_package);
+                icon = view.findViewById(R.id.service_icon);
+                statusBadge = view.findViewById(R.id.status_badge);
+                btnAction = view.findViewById(R.id.btn_action);
+                btnConfig = view.findViewById(R.id.btn_config);
+                progress = view.findViewById(R.id.service_progress);
             }
         }
     }
 }
-
-
-
