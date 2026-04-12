@@ -68,7 +68,22 @@ public class ConsoleFragment extends Fragment {
 
     private void setupWebView() {
         if (mWebView != null) {
-            mWebView.setWebViewClient(new WebViewClient());
+            mWebView.setWebViewClient(new WebViewClient() {
+                @Override
+                public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
+                    if (failingUrl.contains("localhost")) {
+                        String html = "<html><body style='background:#121212;color:#00E5FF;font-family:sans-serif;display:flex;flex-direction:column;justify-content:center;align-items:center;height:100vh;margin:0;padding:20px;text-align:center;'>" +
+                                      "<h1>ANTIGRAVITY DASHBOARD</h1>" +
+                                      "<p style='color:#ffffff;opacity:0.7;'>No local dashboard detected at localhost:3000.</p>" +
+                                      "<div style='border:1px solid #00E5FF;padding:15px;border-radius:8px;margin-top:20px;'>" +
+                                      "<p style='font-size:14px;'>To launch the dashboard, run:</p>" +
+                                      "<code style='background:#000;padding:5px;border-radius:4px;'>node antigravity-server.js</code>" +
+                                      "</div>" +
+                                      "</body></html>";
+                        view.loadData(html, "text/html", "UTF-8");
+                    }
+                }
+            });
             mWebView.getSettings().setJavaScriptEnabled(true);
             mWebView.getSettings().setDomStorageEnabled(true);
             // Default to a useful local dashboard if it exists, otherwise a placeholder
@@ -158,4 +173,6 @@ public class ConsoleFragment extends Fragment {
         }
     }
 }
+
+
 

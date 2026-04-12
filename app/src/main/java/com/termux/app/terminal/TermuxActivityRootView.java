@@ -108,11 +108,15 @@ public class TermuxActivityRootView extends LinearLayout implements ViewTreeObse
         if (marginBottom != null) {
             if (ROOT_VIEW_LOGGING_ENABLED)
                 Logger.logVerbose(LOG_TAG, "onMeasure: Setting bottom margin to " + marginBottom);
+            
             ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) getLayoutParams();
-            params.setMargins(0, 0, 0, marginBottom);
-            setLayoutParams(params);
+            if (params.bottomMargin != marginBottom) {
+                params.bottomMargin = marginBottom;
+                // We use post() to apply layout changes outside the current measure pass
+                // to prevent recursion loops.
+                post(() -> requestLayout());
+            }
             marginBottom = null;
-            requestLayout();
         }
     }
 
@@ -210,8 +214,8 @@ public class TermuxActivityRootView extends LinearLayout implements ViewTreeObse
             if (setMargin) {
                 if (root_view_logging_enabled)
                     Logger.logVerbose(LOG_TAG, "Setting bottom margin to 0");
-                params.setMargins(0, 0, 0, 0);
-                setLayoutParams(params);
+                params.bottomMargin = 0;
+                post(() -> requestLayout());
             } else {
                 if (root_view_logging_enabled)
                     Logger.logVerbose(LOG_TAG, "Bottom margin already equals 0");
@@ -262,8 +266,8 @@ public class TermuxActivityRootView extends LinearLayout implements ViewTreeObse
             if (setMargin) {
                 if (root_view_logging_enabled)
                     Logger.logVerbose(LOG_TAG, "Setting bottom margin to " + pxHidden);
-                params.setMargins(0, 0, 0, pxHidden);
-                setLayoutParams(params);
+                params.bottomMargin = pxHidden;
+                post(() -> requestLayout());
                 lastMarginBottom = pxHidden;
             } else {
                 if (root_view_logging_enabled)
@@ -282,4 +286,5 @@ public class TermuxActivityRootView extends LinearLayout implements ViewTreeObse
     }
 
 }
+
 

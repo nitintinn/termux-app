@@ -24,11 +24,11 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_alignParentBottom="true"
-            android:background="#e0000000"
-            app:itemIconTint="#00FFFF"
+            android:background="#DD121212"
+            app:itemIconTint="#00E5FF"
             app:itemTextColor="#FFFFFF"
             app:menu="@menu/bottom_nav_menu"
-            app:elevation="8dp" />
+            app:elevation="12dp" />
 
     </RelativeLayout>
 
