@@ -313,7 +313,7 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
         setSettingsButtonView(view);
         setNewSessionButtonView(view);
         setToggleKeyboardView(view);
-        setAntigravityDashboardView(view);
+        setAtermuxDashboardView(view);
         setTermuxSessionsListView(view);
         handleInitialSessionCreation();
     }
@@ -401,7 +401,7 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
         if (toggleButton != null) toggleButton.setOnClickListener(v -> { mTermuxTerminalViewClient.onToggleSoftKeyboardRequest(); if (getDrawer() != null) getDrawer().closeDrawers(); });
     }
 
-    private void setAntigravityDashboardView(android.view.View view) {
+    private void setAtermuxDashboardView(android.view.View view) {
         final android.view.View btnProot = view.findViewById(R.id.btn_install_proot);
         final android.view.View btnGit = view.findViewById(R.id.btn_install_git);
         final android.view.View btnSsh = view.findViewById(R.id.btn_install_ssh);
@@ -497,7 +497,7 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
             com.google.android.material.badge.BadgeDrawable badge = bottomNav.getOrCreateBadge(R.id.navigation_terminal);
             badge.setVisible(true);
             badge.setNumber(sessionCount);
-            badge.setBackgroundColor(getColor(R.color.antigravity_cyan));
+            badge.setBackgroundColor(getColor(R.color.atermux_cyan));
             badge.setBadgeTextColor(getColor(R.color.black));
         } else {
             bottomNav.removeBadge(R.id.navigation_terminal);

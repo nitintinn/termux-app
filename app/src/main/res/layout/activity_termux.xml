@@ -39,7 +39,7 @@
                 app:itemIconTint="@color/nav_item_tint"
                 app:itemTextColor="@color/nav_item_tint"
                 app:itemRippleColor="#3000E5FF"
-                app:itemActiveIndicatorStyle="@style/AntigravityNavIndicator"
+                app:itemActiveIndicatorStyle="@style/AtermuxNavIndicator"
                 app:labelVisibilityMode="selected"
                 app:menu="@menu/bottom_nav_menu"
                 app:elevation="0dp" />

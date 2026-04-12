@@ -42,6 +42,7 @@ public class ConsoleFragment extends Fragment {
     private ServiceAdapter mAdapter;
     private TextView mStatusText;
     private WebView mWebView;
+    private MaterialButton mBtnLaunchDashboard, mBtnSetupDashboard;
     private AtermuxServiceRegistry mRegistry;
     private final Handler mHandler = new Handler(Looper.getMainLooper());
     private final Runnable mRefreshRunnable = new Runnable() {
@@ -65,11 +66,21 @@ public class ConsoleFragment extends Fragment {
         mStatusText = view.findViewById(R.id.console_status_text);
         mRecyclerView = view.findViewById(R.id.recycler_quick_actions); // Keep ID from layout
         mWebView = view.findViewById(R.id.console_webview);
+        mBtnLaunchDashboard = view.findViewById(R.id.btn_launch_dashboard);
+        mBtnSetupDashboard = view.findViewById(R.id.btn_setup_dashboard);
 
         mRegistry = new AtermuxServiceRegistry();
         setupRecyclerView();
         setupWebView();
         
+        if (mBtnLaunchDashboard != null) {
+            mBtnLaunchDashboard.setOnClickListener(v -> launchDashboardServer());
+        }
+        
+        if (mBtnSetupDashboard != null) {
+            mBtnSetupDashboard.setOnClickListener(v -> setupDashboard());
+        }
+
         mHandler.post(mRefreshRunnable);
     }
 
@@ -87,19 +98,36 @@ public class ConsoleFragment extends Fragment {
 
     private void setupWebView() {
         if (mWebView != null) {
+            mWebView.setBackgroundColor(Color.TRANSPARENT);
             mWebView.setWebViewClient(new WebViewClient() {
+                @Override
+                public void onPageFinished(WebView view, String url) {
+                    super.onPageFinished(view, url);
+                    if (url.contains("localhost:3000")) {
+                        if (mBtnLaunchDashboard != null) mBtnLaunchDashboard.setVisibility(View.GONE);
+                    }
+                }
+
                 @Override
                 public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
                     if (failingUrl.contains("localhost")) {
-                        String html = "<html><body style='background:#121212;color:#00E5FF;font-family:sans-serif;display:flex;flex-direction:column;justify-content:center;align-items:center;height:100vh;margin:0;padding:20px;text-align:center;'>" +
-                                      "<h1>ANTIGRAVITY DASHBOARD</h1>" +
-                                      "<p style='color:#ffffff;opacity:0.7;'>No local dashboard detected at localhost:3000.</p>" +
-                                      "<div style='border:1px solid #00E5FF;padding:15px;border-radius:8px;margin-top:20px;'>" +
-                                      "<p style='font-size:14px;'>To launch the dashboard, run:</p>" +
-                                      "<code style='background:#000;padding:5px;border-radius:4px;'>node antigravity-server.js</code>" +
+                        if (mBtnLaunchDashboard != null) mBtnLaunchDashboard.setVisibility(View.VISIBLE);
+                        String html = "<html><head><style>" +
+                                      "body { background:#121212; color:#ffffff; font-family:-apple-system,sans-serif; display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; margin:0; padding:20px; text-align:center; overflow:hidden; }" +
+                                      "h1 { color:#00E5FF; font-size:24px; margin-bottom:8px; text-transform:uppercase; letter-spacing:2px; }" +
+                                      "p { opacity:0.6; font-size:14px; margin:4px 0; }" +
+                                      ".box { border:1px solid rgba(0,229,255,0.3); background:rgba(0,229,255,0.05); padding:16px; border-radius:12px; margin-top:20px; width:80%; }" +
+                                      "code { color:#00E5FF; font-family:monospace; font-size:13px; }" +
+                                      "</style></head><body>" +
+                                      "<h1>ATERMUX CONSOLE</h1>" +
+                                      "<p>Proactive management dashboard</p>" +
+                                      "<p style='color:#FF5252;'>No local server detected</p>" +
+                                      "<div class='box'>" +
+                                      "<p style='font-size:12px; margin-bottom:8px;'>Tap 'LAUNCH DASHBOARD' above or run:</p>" +
+                                      "<code>node atermux-server.js</code>" +
                                       "</div>" +
                                       "</body></html>";
-                        view.loadData(html, "text/html", "UTF-8");
+                        view.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null);
                     }
                 }
             });
@@ -107,6 +135,73 @@ public class ConsoleFragment extends Fragment {
             mWebView.getSettings().setDomStorageEnabled(true);
             mWebView.loadUrl("http://localhost:3000");
         }
+    }
+
+    private void launchDashboardServer() {
+        TermuxActivity activity = (TermuxActivity) getActivity();
+        if (activity == null || activity.getTermuxService() == null) return;
+
+        // Run the node command in the background
+        activity.getTermuxService().createTermuxSession(
+            TermuxConstants.TERMUX_BIN_PREFIX_DIR_PATH + "/login",
+            new String[]{"-c", "node atermux-server.js"},
+            null, null, false, "Atermux Dashboard Server");
+
+        Toast.makeText(getContext(), "Launching Atermux Dashboard...", Toast.LENGTH_SHORT).show();
+        
+        // Refresh WebView after a short delay to give the server time to start
+        mHandler.postDelayed(() -> {
+            if (mWebView != null) mWebView.loadUrl("http://localhost:3000");
+        }, 3000);
+    }
+
+    private void setupDashboard() {
+        TermuxActivity activity = (TermuxActivity) getActivity();
+        if (activity == null || activity.getTermuxService() == null) return;
+
+        String template = "const http = require('http');\n" +
+                "const server = http.createServer((req, res) => {\n" +
+                "  res.writeHead(200, { 'Content-Type': 'text/html' });\n" +
+                "  res.end(`\n" +
+                "    <!DOCTYPE html>\n" +
+                "    <html>\n" +
+                "    <head>\n" +
+                "        <meta name='viewport' content='width=device-width, initial-scale=1.0'>\n" +
+                "        <style>\n" +
+                "            body { background: #0a0a0b; color: #ffffff; font-family: -apple-system, sans-serif; height: 100vh; margin: 0; display: flex; justify-content: center; align-items: center; }\n" +
+                "            .card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(0, 255, 255, 0.2); padding: 30px; border-radius: 20px; text-align: center; backdrop-filter: blur(10px); width: 80%; }\n" +
+                "            h1 { color: #00ffff; font-size: 24px; margin: 0 0 10px 0; letter-spacing: 2px; }\n" +
+                "            .status { display: inline-block; padding: 4px 12px; border-radius: 20px; background: rgba(0, 255, 0, 0.1); color: #00ff00; font-size: 12px; margin-top: 10px; }\n" +
+                "            .info { margin-top: 20px; font-size: 14px; opacity: 0.6; }\n" +
+                "        </style>\n" +
+                "    </head>\n" +
+                "    <body>\n" +
+                "        <div class='card'>\n" +
+                "            <h1>ATERMUX PRO</h1>\n" +
+                "            <div class='status'>SYSTEM ONLINE</div>\n" +
+                "            <div class='info'>Server running from local Termux node</div>\n" +
+                "            <p style='font-size: 12px; opacity: 0.4; margin-top: 30px;'>Atermux Pro v1.0 • Built for Performance</p>\n" +
+                "        </div>\n" +
+                "    </body>\n" +
+                "    </html>\n" +
+                "  `);\n" +
+                "});\n" +
+                "server.listen(3000, 'localhost', () => {\n" +
+                "  console.log('Atermux Console running at http://localhost:3000/');\n" +
+                "});";
+
+        // Write the template to a file
+        String createCmd = "cat <<EOF > atermux-server.js\n" + template + "\nEOF";
+        
+        activity.getTermuxService().createTermuxSession(
+            TermuxConstants.TERMUX_BIN_PREFIX_DIR_PATH + "/login",
+            new String[]{"-c", createCmd},
+            null, null, false, "Initializing Atermux Dashboard");
+
+        Toast.makeText(getContext(), "Initializing Dashboard Server...", Toast.LENGTH_SHORT).show();
+        
+        // Launch it immediately after creation
+        mHandler.postDelayed(this::launchDashboardServer, 2000);
     }
 
     private void refreshStatus() {

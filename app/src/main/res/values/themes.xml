@@ -18,7 +18,7 @@
     <!-- TermuxActivity DayNight NoActionBar theme. -->
     <style name="Theme.TermuxActivity.DayNight.NoActionBar" parent="Theme.TermuxApp.DayNight.NoActionBar">
         <!-- Navigation Bar Styles -->
-        <item name="bottomNavigationStyle">@style/AntigravityBottomNav</item>
+        <item name="bottomNavigationStyle">@style/AtermuxBottomNav</item>
 
         <!-- Primary brand color. -->
         <item name="colorPrimary">@color/black</item>
@@ -49,12 +49,12 @@
         <item name="extraKeysButtonActiveBackgroundColor">@color/grey_500</item>
     </style>
 
-    <style name="AntigravityBottomNav" parent="Widget.MaterialComponents.BottomNavigationView">
-        <item name="itemActiveIndicatorStyle">@style/AntigravityNavIndicator</item>
+    <style name="AtermuxBottomNav" parent="Widget.MaterialComponents.BottomNavigationView">
+        <item name="itemActiveIndicatorStyle">@style/AtermuxNavIndicator</item>
     </style>
 
-    <style name="AntigravityNavIndicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
-        <item name="android:color">@color/antigravity_cyan_faded</item>
+    <style name="AtermuxNavIndicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
+        <item name="android:color">@color/atermux_cyan_faded</item>
         <item name="android:width">48dp</item>
         <item name="android:height">32dp</item>
     </style>

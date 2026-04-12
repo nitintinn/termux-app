@@ -90,24 +90,100 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
                 android:layout_marginBottom="12dp"
-                android:text="WEB MANAGEMENT"
+                android:text="SYSTEM OVERVIEW"
                 android:textColor="#50FFFFFF"
                 android:textSize="11sp"
                 android:textStyle="bold"
                 android:letterSpacing="0.05" />
 
+            <!-- RAM Usage Card -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
-                android:layout_height="250dp"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
                 app:cardCornerRadius="16dp"
                 app:cardBackgroundColor="#1AFFFFFF"
                 app:strokeWidth="1dp"
                 app:strokeColor="#30FFFFFF">
-
-                <WebView
-                    android:id="@+id/console_webview"
+                <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent" />
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Memory (RAM)"
+                            android:textColor="#00FFFF"
+                            android:textStyle="bold" />
+                        <TextView
+                            android:id="@+id/tv_ram_stats"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_alignParentRight="true"
+                            android:text="0 / 0 GB"
+                            android:textColor="#80FFFFFF"
+                            android:textSize="12sp" />
+                    </RelativeLayout>
+                    <com.google.android.material.progressindicator.LinearProgressIndicator
+                        android:id="@+id/progress_ram"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        app:trackColor="#20FFFFFF"
+                        app:indicatorColor="#00FFFF"
+                        app:trackThickness="6dp"
+                        app:trackCornerRadius="3dp"
+                        android:progress="30" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Storage Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                app:cardCornerRadius="16dp"
+                app:cardBackgroundColor="#1AFFFFFF"
+                app:strokeWidth="1dp"
+                app:strokeColor="#30FFFFFF">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Internal Storage"
+                            android:textColor="#00FFFF"
+                            android:textStyle="bold" />
+                        <TextView
+                            android:id="@+id/tv_storage_stats"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_alignParentRight="true"
+                            android:text="0 / 0 GB"
+                            android:textColor="#80FFFFFF"
+                            android:textSize="12sp" />
+                    </RelativeLayout>
+                    <com.google.android.material.progressindicator.LinearProgressIndicator
+                        android:id="@+id/progress_storage"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        app:trackColor="#20FFFFFF"
+                        app:indicatorColor="#00E5FF"
+                        app:trackThickness="6dp"
+                        app:trackCornerRadius="3dp"
+                        android:progress="60" />
+                </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
         </LinearLayout>
