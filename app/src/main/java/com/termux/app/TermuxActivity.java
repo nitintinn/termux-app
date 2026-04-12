@@ -459,6 +459,23 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
             else if (itemId == R.id.navigation_settings) { switchFragment(TAG_SETTINGS); return true; }
             return false;
         });
+        updateTerminalBadge();
+    }
+
+    public void updateTerminalBadge() {
+        BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
+        if (bottomNav == null || mTermuxService == null) return;
+
+        int sessionCount = mTermuxService.getTermuxSessionsSize();
+        if (sessionCount > 0) {
+            com.google.android.material.badge.BadgeDrawable badge = bottomNav.getOrCreateBadge(R.id.navigation_terminal);
+            badge.setVisible(true);
+            badge.setNumber(sessionCount);
+            badge.setBackgroundColor(getColor(R.color.antigravity_cyan));
+            badge.setBadgeTextColor(getColor(R.color.black));
+        } else {
+            bottomNav.removeBadge(R.id.navigation_terminal);
+        }
     }
 
     @Override
@@ -545,7 +562,10 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
     public boolean isOnResumeAfterOnCreate() { return mIsOnResumeAfterOnCreate; }
     public int getNavBarHeight() { return mNavBarHeight; }
     public ExtraKeysView getExtraKeysView() { return mExtraKeysView; }
-    public void termuxSessionListNotifyUpdated() { if (mTermuxSessionListViewController != null) mTermuxSessionListViewController.notifyDataSetChanged(); }
+    public void termuxSessionListNotifyUpdated() {
+        if (mTermuxSessionListViewController != null) mTermuxSessionListViewController.notifyDataSetChanged();
+        updateTerminalBadge();
+    }
     public boolean isTerminalViewSelected() { return TAG_TERMINAL.equals(mCurrentFragmentTag); }
 
     class TermuxActivityBroadcastReceiver extends BroadcastReceiver {
