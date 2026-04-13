@@ -1,11 +1,61 @@
 package com.termux.app.fragments;
 
+import android.animation.ObjectAnimator;
+import android.animation.ValueAnimator;
+import android.app.ActivityManager;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
+import android.graphics.Typeface;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.StatFs;
+import android.view.Gravity;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.ProgressBar;
+import android.widget.ScrollView;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
+import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.chip.Chip;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.progressindicator.LinearProgressIndicator;
+import com.termux.R;
+import com.termux.app.TermuxActivity;
+import com.termux.app.TermuxService;
+import com.termux.app.models.AtermuxServiceRegistry;
+import com.termux.app.models.ManagedService;
+import com.termux.shared.logger.Logger;
+import com.termux.shared.termux.TermuxConstants;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.List;
+import android.os.Looper;
+import android.animation.ObjectAnimator;
+import android.animation.ValueAnimator;
 import android.app.ActivityManager;
 import android.os.Environment;
 import android.os.StatFs;
@@ -27,22 +77,27 @@ import androidx.appcompat.app.AlertDialog;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.material.progressindicator.LinearProgressIndicator;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
-import com.google.android.material.snackbar.Snackbar;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.termux.R;
 import com.termux.app.TermuxActivity;
 import com.termux.app.TermuxService;
@@ -51,6 +106,10 @@ import com.termux.app.models.ManagedService;
 import com.termux.shared.logger.Logger;
 import com.termux.shared.termux.TermuxConstants;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.RandomAccessFile;
 import java.util.List;
 
 public class ConsoleFragment extends Fragment {
@@ -61,6 +120,8 @@ public class ConsoleFragment extends Fragment {
     private TextView mStatusText;
     private TextView mTvRamStats, mTvStorageStats, mTvCpuStats;
     private LinearProgressIndicator mProgressRam, mProgressStorage, mProgressCpu;
+    private RecyclerView mRecyclerViewHub;
+    private QuickActionAdapter mAdapterHub;
     
     // Hosting Wizard UI
     private View mLayoutLiveUrl;
@@ -94,7 +155,8 @@ public class ConsoleFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         mStatusText = view.findViewById(R.id.console_status_text);
-        mRecyclerView = view.findViewById(R.id.recycler_quick_actions); 
+        mRecyclerView = view.findViewById(R.id.recycler_managed_services);
+        mRecyclerViewHub = view.findViewById(R.id.recycler_quick_actions_hub);
         
         mTvRamStats = view.findViewById(R.id.tv_ram_stats);
         mTvStorageStats = view.findViewById(R.id.tv_storage_stats);
@@ -133,9 +195,110 @@ public class ConsoleFragment extends Fragment {
     }
 
     private void setupRecyclerView() {
-        mAdapter = new ServiceAdapter(mRegistry.getServices(), this::onServiceAction);
+        mAdapter = new ServiceAdapter(mRegistry.getServices(), new ServiceAdapter.OnServiceListener() {
+            @Override
+            public void onAction(ManagedService service) {
+                onServiceAction(service);
+            }
+
+            @Override
+            public void onConfig(ManagedService service) {
+                onServiceConfig(service);
+            }
+
+            @Override
+            public void onLogs(ManagedService service) {
+                showLogDialog(service);
+            }
+
+            @Override
+            public void onSyncGit() {
+                syncAllGitRepos();
+            }
+        });
         mRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         mRecyclerView.setAdapter(mAdapter);
+
+        // Setup Quick Actions HUB
+        List<QuickAction> hubActions = getHubActions();
+        mAdapterHub = new QuickActionAdapter(hubActions, this::onQuickAction);
+        mRecyclerViewHub.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
+        mRecyclerViewHub.setAdapter(mAdapterHub);
+    }
+
+    private List<QuickAction> getHubActions() {
+        List<QuickAction> actions = new java.util.ArrayList<>();
+        actions.add(new QuickAction("Update System", R.drawable.ic_sync, "pkg upgrade -y"));
+        actions.add(new QuickAction("Security", R.drawable.ic_shield, "MANAGER:SSH"));
+        actions.add(new QuickAction("Clear Cache", R.drawable.ic_cleaning, "rm -rf ~/.cache/*"));
+        actions.add(new QuickAction("View Logs", R.drawable.ic_history, "tail -f ~/atermux.log"));
+        actions.add(new QuickAction("System Peek", R.drawable.ic_bolt, "neofetch"));
+        return actions;
+    }
+
+    private void onQuickAction(QuickAction action) {
+        if (action.command.equals("MANAGER:SSH")) {
+            showSSHKeyManager();
+            return;
+        }
+        
+        TermuxActivity activity = (TermuxActivity) getActivity();
+        if (activity == null || activity.getTermuxService() == null) return;
+        
+        Toast.makeText(getContext(), "Executing: " + action.title, Toast.LENGTH_SHORT).show();
+        activity.getTermuxService().createTermuxSession(
+            TermuxConstants.TERMUX_BIN_PREFIX_DIR_PATH + "/login",
+            new String[]{"-c", action.command},
+            null, null, false, action.title);
+    }
+
+    /**
+     * Quick Action Support Classes
+     */
+    static class QuickAction {
+        String title, command;
+        int iconRes;
+        QuickAction(String t, int i, String c) { title = t; iconRes = i; command = c; }
+    }
+
+    static class QuickActionAdapter extends RecyclerView.Adapter<QuickActionAdapter.ViewHolder> {
+        private final List<QuickAction> actions;
+        private final OnActionListener listener;
+
+        interface OnActionListener { void onAction(QuickAction action); }
+
+        QuickActionAdapter(List<QuickAction> actions, OnActionListener listener) {
+            this.actions = actions;
+            this.listener = listener;
+        }
+
+        @NonNull
+        @Override
+        public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_quick_action, parent, false);
+            return new ViewHolder(view);
+        }
+
+        @Override
+        public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+            QuickAction action = actions.get(position);
+            holder.title.setText(action.title);
+            holder.icon.setImageResource(action.iconRes);
+            holder.itemView.setOnClickListener(v -> listener.onAction(action));
+        }
+
+        @Override
+        public int getItemCount() { return actions.size(); }
+
+        static class ViewHolder extends RecyclerView.ViewHolder {
+            TextView title;
+            ImageView icon;
+            ViewHolder(View view) {
+                super(view);
+                title = view.findViewById(R.id.action_title);
+                icon = view.findViewById(R.id.action_icon);
+            }
+        }
     }
 
     private void refreshStatus() {
@@ -149,6 +312,7 @@ public class ConsoleFragment extends Fragment {
         mRegistry.refreshStates(service, () -> {
             activity.runOnUiThread(() -> {
                 mAdapter.notifyDataSetChanged();
+                mAdapterHub.notifyDataSetChanged();
                 int sessionCount = service.getTermuxSessionsSize();
                 mStatusText.setText("System Ready • " + sessionCount + " Active Sessions");
                 
@@ -383,13 +547,22 @@ public class ConsoleFragment extends Fragment {
             String finalLoadAvg = loadAvg;
             ((TermuxActivity) context).runOnUiThread(() -> {
                 if (mTvRamStats != null) mTvRamStats.setText(formatSize(usedRam) + " / " + formatSize(totalRam));
-                if (mProgressRam != null) mProgressRam.setProgress(ramPercent, true);
+                if (mProgressRam != null) {
+                    mProgressRam.setProgress(ramPercent, true);
+                    applyPulseEffect(mProgressRam, ramPercent);
+                }
 
                 if (mTvStorageStats != null) mTvStorageStats.setText(formatSize(usedStorage) + " / " + formatSize(totalStorage));
-                if (mProgressStorage != null) mProgressStorage.setProgress(storagePercent, true);
+                if (mProgressStorage != null) {
+                    mProgressStorage.setProgress(storagePercent, true);
+                    applyPulseEffect(mProgressStorage, storagePercent);
+                }
 
                 if (mTvCpuStats != null) mTvCpuStats.setText(finalLoadAvg);
-                if (mProgressCpu != null) mProgressCpu.setProgress(cpuPercent, true);
+                if (mProgressCpu != null) {
+                    mProgressCpu.setProgress(cpuPercent, true);
+                    applyPulseEffect(mProgressCpu, cpuPercent);
+                }
             });
         }
     }
@@ -421,6 +594,107 @@ public class ConsoleFragment extends Fragment {
         return String.format("%.1f %s", fSize, suffix);
     }
 
+    private void showLogDialog(ManagedService service) {
+        LinearLayout layout = new LinearLayout(getContext());
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(32, 32, 32, 32);
+
+        TextView logView = new TextView(getContext());
+        logView.setPadding(16, 16, 16, 16);
+        logView.setBackgroundColor(Color.parseColor("#0A0A0A"));
+        logView.setTextColor(Color.parseColor("#00FF00"));
+        logView.setTypeface(Typeface.MONOSPACE);
+        logView.setTextSize(10);
+        logView.setText("Loading logs for " + service.getTitle() + "...\n");
+        
+        ScrollView scroll = new ScrollView(getContext());
+        scroll.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 800));
+        scroll.addView(logView);
+        layout.addView(scroll);
+
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(getContext())
+            .setTitle(service.getTitle() + " Real-time Logs")
+            .setView(layout)
+            .setPositiveButton("REFRESH", null)
+            .setNegativeButton("CLOSE", null);
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+
+        // Refresh Logic
+        Button refreshBtn = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+        refreshBtn.setOnClickListener(v -> {
+            String logCommand = "tail -n 50 /data/data/com.termux/files/usr/var/log/" + service.getPackageName() + ".log 2>/dev/null || echo 'No logs found at standard location.'";
+            // For some services, we might need manual overrides
+            if (service.getTitle().contains("Cloudflare")) logCommand = "tail -n 50 ~/.cloudflared/*.log 2>/dev/null || echo 'No activity logs found.'";
+            
+            final String finalCmd = logCommand;
+            new Thread(() -> {
+                try {
+                    Process p = Runtime.getRuntime().exec(new String[]{"/data/data/com.termux/files/usr/bin/bash", "-c", finalCmd});
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
+                    StringBuilder out = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) out.append(line).append("\n");
+                    reader.close();
+                    if (out.length() == 0) out.append("Log stream empty.");
+                    
+                    String result = out.toString();
+                    getActivity().runOnUiThread(() -> logView.setText(result));
+                } catch (Exception e) {
+                    getActivity().runOnUiThread(() -> logView.setText("Error reading log string: " + e.getMessage()));
+                }
+            }).start();
+        });
+
+        // Trigger first refresh automatically
+        refreshBtn.performClick();
+    }
+
+    private void showSSHKeyManager() {
+        LinearLayout layout = new LinearLayout(getContext());
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(40, 40, 40, 20);
+
+        final EditText inputKeys = new EditText(getContext());
+        inputKeys.setHint("Paste Public Keys here (one per line)...");
+        inputKeys.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+        inputKeys.setLines(10);
+        inputKeys.setGravity(android.view.Gravity.TOP);
+        layout.addView(inputKeys);
+        
+        // Initial Fetch
+        new Thread(() -> {
+            try {
+                Process p = Runtime.getRuntime().exec(new String[]{"/data/data/com.termux/files/usr/bin/cat", "/data/data/com.termux/files/home/.ssh/authorized_keys"});
+                BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) sb.append(line).append("\n");
+                reader.close();
+                String keys = sb.toString();
+                getActivity().runOnUiThread(() -> inputKeys.setText(keys));
+            } catch (Exception ignored) {}
+        }).start();
+
+        new MaterialAlertDialogBuilder(getContext())
+            .setTitle("SSH Key Manager")
+            .setView(layout)
+            .setPositiveButton("SAVE KEYS", (dialog, which) -> {
+                String newKeys = inputKeys.getText().toString().trim();
+                String saveCmd = "mkdir -p ~/.ssh && echo \"" + newKeys + "\" > ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys";
+                TermuxActivity activity = (TermuxActivity) getActivity();
+                if (activity != null && activity.getTermuxService() != null) {
+                    activity.getTermuxService().createTermuxSession(
+                        TermuxConstants.TERMUX_BIN_PREFIX_DIR_PATH + "/login",
+                        new String[]{"-c", saveCmd},
+                        null, null, false, "Updating SSH Keys");
+                }
+            })
+            .setNegativeButton("CANCEL", null)
+            .show();
+    }
+
     private void onServiceAction(ManagedService service) {
         TermuxActivity activity = (TermuxActivity) getActivity();
         if (activity == null) return;
@@ -440,8 +714,23 @@ public class ConsoleFragment extends Fragment {
         }
     }
 
+    private void onServiceConfig(ManagedService service) {
+        if (service.getTitle().contains("Git")) {
+            showGitConfigDialog();
+        } else if (service.getConfigPath() != null) {
+            TermuxActivity activity = (TermuxActivity) getActivity();
+            if (activity == null || activity.getTermuxService() == null) return;
+            activity.getTermuxService().createTermuxSession(
+                TermuxConstants.TERMUX_BIN_PREFIX_DIR_PATH + "/login",
+                new String[]{"-c", "nano " + service.getConfigPath()},
+                null, null, false, "Editing " + service.getTitle() + " Config");
+            Toast.makeText(getContext(), "Editing config in Terminal...", Toast.LENGTH_SHORT).show();
+        }
+    }
+
     private void installService(ManagedService service, TermuxService termuxService) {
         service.setState(ManagedService.ServiceState.ACTION_IN_PROGRESS);
+        if (isCriticalService(service)) service.setWatchdogEnabled(true);
         mAdapter.notifyDataSetChanged();
 
         String installCmd = "pkg install -y " + service.getPackageName();
@@ -457,6 +746,7 @@ public class ConsoleFragment extends Fragment {
         if (service.getStartCmd() == null) return;
         
         service.setState(ManagedService.ServiceState.ACTION_IN_PROGRESS);
+        if (isCriticalService(service)) service.setWatchdogEnabled(true);
         mAdapter.notifyDataSetChanged();
 
         termuxService.createTermuxSession(
@@ -469,12 +759,18 @@ public class ConsoleFragment extends Fragment {
         if (service.getStopCmd() == null) return;
         
         service.setState(ManagedService.ServiceState.ACTION_IN_PROGRESS);
+        service.setWatchdogEnabled(false); // Disable guard when manually stopped
         mAdapter.notifyDataSetChanged();
 
         termuxService.createTermuxSession(
             TermuxConstants.TERMUX_BIN_PREFIX_DIR_PATH + "/login",
             new String[]{"-c", service.getStopCmd()},
             null, null, false, "Stopping " + service.getTitle());
+    }
+
+    private boolean isCriticalService(ManagedService service) {
+        String title = service.getTitle();
+        return title.contains("Cloudflare") || title.contains("MariaDB") || title.contains("SSH");
     }
 
     /**
@@ -486,6 +782,9 @@ public class ConsoleFragment extends Fragment {
 
         interface OnServiceListener {
             void onAction(ManagedService service);
+            void onConfig(ManagedService service);
+            void onLogs(ManagedService service);
+            void onSyncGit();
         }
 
         ServiceAdapter(List<ManagedService> services, OnServiceListener listener) {
@@ -513,24 +812,20 @@ public class ConsoleFragment extends Fragment {
             
             if (service.getConfigPath() != null && service.getState() != ManagedService.ServiceState.UNINSTALLED) {
                 holder.btnConfig.setVisibility(View.VISIBLE);
-                holder.btnConfig.setOnClickListener(v -> {
-                    // Start an editor in the terminal
-                    TermuxActivity activity = (TermuxActivity) v.getContext();
-                    activity.getTermuxService().createTermuxSession(
-                        TermuxConstants.TERMUX_BIN_PREFIX_DIR_PATH + "/login",
-                        new String[]{"-c", "nano " + service.getConfigPath()},
-                        null, null, false, "Editing " + service.getTitle() + " Config");
-                    Toast.makeText(v.getContext(), "Editing config in Terminal...", Toast.LENGTH_SHORT).show();
-                });
+                holder.btnConfig.setOnClickListener(v -> listener.onConfig(service));
+            } else if (service.getTitle().contains("Git")) {
+                holder.btnConfig.setVisibility(View.VISIBLE);
+                holder.btnConfig.setOnClickListener(v -> listener.onConfig(service));
             } else {
                 holder.btnConfig.setVisibility(View.GONE);
             }
 
-            } else if (service.getTitle().contains("Git")) {
-                holder.btnConfig.setVisibility(View.VISIBLE);
-                holder.btnConfig.setOnClickListener(v -> ((ConsoleFragment)v.getContext()).showGitConfigDialog());
+            // Logs Integration
+            if (service.getState() != ManagedService.ServiceState.UNINSTALLED) {
+                holder.btnLogs.setVisibility(View.VISIBLE);
+                holder.btnLogs.setOnClickListener(v -> listener.onLogs(service));
             } else {
-                holder.btnConfig.setVisibility(View.GONE);
+                holder.btnLogs.setVisibility(View.GONE);
             }
 
             // Insights Integration
@@ -542,7 +837,7 @@ public class ConsoleFragment extends Fragment {
                 // Add Sync All button if it's Git
                 if (service.getTitle().contains("Git")) {
                     holder.statsText.append("\n[ TAP TO SYNC ALL PROJECTS ]");
-                    holder.statsContainer.setOnClickListener(v -> syncAllGitRepos());
+                    holder.statsContainer.setOnClickListener(v -> listener.onSyncGit());
                 } else {
                     holder.statsContainer.setOnClickListener(null);
                 }
@@ -599,7 +894,7 @@ public class ConsoleFragment extends Fragment {
             TextView title, pkg, statsText;
             ImageView icon;
             Chip statusBadge;
-            MaterialButton btnAction, btnConfig;
+            MaterialButton btnAction, btnConfig, btnLogs;
             ProgressBar progress;
             View statsContainer, statsDivider;
 
@@ -611,10 +906,31 @@ public class ConsoleFragment extends Fragment {
                 statusBadge = view.findViewById(R.id.status_badge);
                 btnAction = view.findViewById(R.id.btn_action);
                 btnConfig = view.findViewById(R.id.btn_config);
+                btnLogs = view.findViewById(R.id.btn_logs);
                 progress = view.findViewById(R.id.service_progress);
                 statsContainer = view.findViewById(R.id.stats_container);
                 statsDivider = view.findViewById(R.id.stats_divider);
                 statsText = view.findViewById(R.id.service_stats);
+            }
+        }
+    }
+
+    private void applyPulseEffect(View view, int percent) {
+        if (percent >= 80) {
+            if (view.getTag(R.id.action_container) == null) {
+                ObjectAnimator animator = ObjectAnimator.ofFloat(view, "alpha", 1.0f, 0.4f);
+                animator.setDuration(800);
+                animator.setRepeatMode(ValueAnimator.REVERSE);
+                animator.setRepeatCount(ValueAnimator.INFINITE);
+                animator.start();
+                view.setTag(R.id.action_container, animator);
+            }
+        } else {
+            ObjectAnimator anim = (ObjectAnimator) view.getTag(R.id.action_container);
+            if (anim != null) {
+                anim.cancel();
+                view.setTag(R.id.action_container, null);
+                view.setAlpha(1.0f);
             }
         }
     }

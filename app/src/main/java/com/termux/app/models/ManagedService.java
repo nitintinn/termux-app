@@ -29,6 +29,7 @@ public class ManagedService {
     private String lastOutput = "";
     private String publicUrl = "";
     private String accountStats = "";
+    private boolean watchdogEnabled = false;
 
     public ManagedService(String title, String packageName, String binaryName, String startCmd, String stopCmd, String checkRunningCmd, String configPath, @DrawableRes int iconResId) {
         this.title = title;
@@ -58,6 +59,9 @@ public class ManagedService {
     public void setPublicUrl(String publicUrl) { this.publicUrl = publicUrl; }
     public String getAccountStats() { return accountStats; }
     public void setAccountStats(String accountStats) { this.accountStats = accountStats; }
+
+    public boolean isWatchdogEnabled() { return watchdogEnabled; }
+    public void setWatchdogEnabled(boolean watchdogEnabled) { this.watchdogEnabled = watchdogEnabled; }
 
     public String getBinaryPath() {
         return "/data/data/com.termux/files/usr/bin/" + binaryName;

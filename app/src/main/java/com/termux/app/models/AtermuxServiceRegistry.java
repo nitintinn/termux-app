@@ -4,6 +4,7 @@ import com.termux.R;
 import com.termux.app.TermuxService;
 import com.termux.shared.shell.command.ExecutionCommand;
 import com.termux.shared.shell.command.runner.app.AppShell;
+import com.termux.shared.termux.TermuxConstants;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -71,6 +72,14 @@ public class AtermuxServiceRegistry {
                         fetchCloudflareInsights(service);
                     } else if (service.getTitle().contains("Git")) {
                         fetchGitInsights(service);
+                    } else if (service.getTitle().contains("MariaDB")) {
+                        fetchMariaDBInsights(service);
+                    }
+
+                    // Enterprise Guard (Watchdog) Logic
+                    if (service.isWatchdogEnabled() && !running && service.getState() == ManagedService.ServiceState.RUNNING) {
+                        // Service was supposed to be running but isn't. Reserving restart.
+                        restartServiceSilently(service, termuxService);
                     }
                 } catch (Exception e) {
                     service.setState(ManagedService.ServiceState.STOPPED);
@@ -192,6 +201,47 @@ public class AtermuxServiceRegistry {
         } catch (Exception e) {
             service.setAccountStats("Git: Metadata fetch failed");
         }
+    }
+
+    private void fetchMariaDBInsights(ManagedService service) {
+        try {
+            StringBuilder stats = new StringBuilder();
+            // Count databases
+            Process p = Runtime.getRuntime().exec(new String[]{"/data/data/com.termux/files/usr/bin/mysql", "-u", "root", "-e", "show databases;"});
+            BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            int count = 0;
+            while (reader.readLine() != null) count++;
+            reader.close();
+            p.waitFor();
+
+            int actualDbs = Math.max(0, count - 1); // Subtract header
+            stats.append("DATABASES: ").append(actualDbs).append(" active\n");
+            
+            // Check storage size of /data/data/com.termux/files/usr/var/lib/mysql
+            Process p2 = Runtime.getRuntime().exec(new String[]{"/data/data/com.termux/files/usr/bin/du", "-sh", "/data/data/com.termux/files/usr/var/lib/mysql"});
+            BufferedReader reader2 = new BufferedReader(new InputStreamReader(p2.getInputStream()));
+            String sizeLine = reader2.readLine();
+            reader2.close();
+            p2.waitFor();
+
+            if (sizeLine != null) {
+                String size = sizeLine.split("\t")[0];
+                stats.append("STORAGE: ").append(size).append(" used\n");
+            }
+            stats.append("STATUS: Fast & Responsive");
+
+            service.setAccountStats(stats.toString());
+        } catch (Exception e) {
+            service.setAccountStats("MariaDB: Info unavailable (Check if running)");
+        }
+    }
+
+    private void restartServiceSilently(ManagedService service, TermuxService termuxService) {
+        if (service.getStartCmd() == null) return;
+        termuxService.createTermuxSession(
+            TermuxConstants.TERMUX_BIN_PREFIX_DIR_PATH + "/login",
+            new String[]{"-c", service.getStartCmd()},
+            null, null, false, "Guard: Restarting " + service.getTitle());
     }
 
     private String getGitBranch(String path) {

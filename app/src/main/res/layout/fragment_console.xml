@@ -195,6 +195,24 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="12dp"
+                android:text="QUICK ACCESS"
+                android:textColor="#50FFFFFF"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.05" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recycler_quick_actions_hub"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                android:orientation="horizontal"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
                 android:text="MANAGED SERVICES"
                 android:textColor="#50FFFFFF"
                 android:textSize="11sp"
@@ -202,7 +220,7 @@
                 android:letterSpacing="0.05" />
 
             <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/recycler_quick_actions"
+                android:id="@+id/recycler_managed_services"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:nestedScrollingEnabled="false" />
